@@ -1,12 +1,21 @@
 import java.util.Random;
 public class Rnd {
-    double Rnd_generator(long lambda,long seed){
-        Random random = new Random();
+    public Rnd(long input_seed){
+        seed=input_seed;
+        random = new Random();
         random.setSeed(seed);
-        double r=random.nextFloat();
+    }
+    double Rnd_generator(double lambda){
+        
+        double r=random.nextDouble();
         
         return ((-1)*(1/lambda)*Math.log(1-r));
 
     }
+    long getSeed(){
+        return seed;
+    }
+    long seed;
+    Random random;
     
 }
