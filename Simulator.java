@@ -2,12 +2,31 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.*;
 
-
-
 /*
  * Simulator
+ * LambdasA,LambdasB=[lambda di ogni categoria]
+ * timestamp=[currenttime,[category,operation]]
  */
+
+
 public class Simulator {
+
+    static int RRscheduling(int index,int Server_Number){
+        index++;
+        if(index==Server_Number){
+            index=0;
+        }
+
+        return index;
+    }
+    static Pair timeStampGenerator(int category,int operation,Rnd random,double lambda,float currenttime,int server){
+        int[]event = new int[3];
+        event[0]=category;
+        event[1]=operation;
+        event[2]=server;
+        Pair timestamp = new Pair(currenttime+random.Rnd_generator(lambda), event);
+        return timestamp;
+    }
     static double[] extraction(String path){
         double[] output = new double[9];
         try{
@@ -83,12 +102,22 @@ public class Simulator {
         return output;
 
     }
+    static int condition(int[] array){
+        int sum=0;
+        for(int i=0;i<array.length;i++){
+            sum=sum+array[i];
+        }
+        return sum-array.length;
+
+    }
     public static void main(String[] args) {
         double[] parameters=extraction("parameters.txt");
 
         for(int i=0;i<parameters.length;i++){
            System.out.println(parameters[i]);
         }
+
+
 
         int Server_Number=(int)parameters[0];
         int Numer_Category=(int)parameters[1];
@@ -102,8 +131,73 @@ public class Simulator {
         Rnd randomA = new Rnd(seedA);
         Rnd randomB = new Rnd(seedB);
 
+        int[] JobCategoryCounter = new int[Numer_Category];
+        double[] LambdasA = new double[Numer_Category];
+        double[] LambdasB = new double[Numer_Category];
+        Server[] Servers = new Server[Server_Number];
 
-        double[] Jobs = new double[Max_numeber_Jobs];
+        Arrays.fill(JobCategoryCounter, 1);
+        Arrays.fill(LambdasA, lambdaA);
+        Arrays.fill(LambdasB, lambdaB);
+        for(int i=0;i<Server_Number;i++){
+            Server newServer = new Server();
+            Servers[i]=newServer;
+        }
+
+        float currenttime=0;
+        int sereverIndex=0;
+        int server_pointer=-1;
+
+        Queue<Pair> timeline = new PriorityQueue();
+
+        for(int i=0;i<Numer_Category;i++){
+            timeline.add(timeStampGenerator(i, 0, randomA, lambdaA, currenttime,server_pointer));
+        }
+
+        while(condition(JobCategoryCounter)<Max_numeber_Jobs){
+            Pair timestamp = timeline.poll();
+            float time=(float)timestamp.getKey();
+
+            int[] event=(int[])timestamp.getValue();
+            int operation=event[0];
+            int category=event[1];
+            server_pointer=event[2];
+            
+            currenttime=time;
+
+            switch (operation) {
+                case 0:
+                    /*load del server */
+                    int loadindex=RRscheduling(sereverIndex,Server_Number);
+                    Servers[loadindex].AddToQueue(category);
+                    break;
+            
+                case 1:
+                    /*unload del server */
+                    int serverOutput=Servers[server_pointer].unload();
+                    JobCategoryCounter[serverOutput]=JobCategoryCounter[serverOutput]+1;
+                    /*calcolo del tempo di esecuzione nel server */
+                    break;
+            }
+
+
+        }
+
+
+
+System.out.println(currenttime);
+        }
+        
+    }
+
+
+    
+/*Cimitero delle cose:
+ * 
+ * 
+ * 
+ * 
+double[] Jobs = new double[Max_numeber_Jobs];
         for (int i=0;i<Jobs.length;i++){
             Jobs[i]=randomA.Rnd_generator(lambdaA);
             System.out.println(Jobs[i]);
@@ -112,10 +206,28 @@ public class Simulator {
         for (int i=0;i<waits.length;i++){
             waits[i]=randomB.Rnd_generator(lambdaB);
             System.out.println(waits[i]);
+
+
+
+public class Heap_Implementation {
+    public Heap_Implementation(int initial_entry){
+        Heap = new Pair[initial_entry];
+        for(int i=0;i<initial_entry;i++){
+
+            Pair entry = new Pair(assigned_priority_key, value);
+
+
+
         }
+
         
+
+
     }
 
-
-    
+private int entry_number;
+private Pair[] Heap;
 }
+
+
+ */

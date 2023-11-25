@@ -5,11 +5,11 @@ public class Rnd {
         random = new Random();
         random.setSeed(seed);
     }
-    double Rnd_generator(double lambda){
+    float Rnd_generator(double lambda){
         
-        double r=random.nextDouble();
+        float r=random.nextFloat();
         
-        return ((-1)*(1/lambda)*Math.log(1-r));
+        return (float)((-1)*(1/lambda)*Math.log(1-r));
 
     }
     long getSeed(){

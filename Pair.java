@@ -1,18 +1,31 @@
-public class Pair {
-    public Pair(int insert_key, float insert_value){
+class Pair implements Comparable<Pair>{
+    public Pair (float insert_key, Object insert_value){
         key=insert_key;
         value=insert_value;
 
     }
-    public int getKey() {
+    
+    
+    
+    public float getKey() {
         return key;
     }
-    public float getValue(){
+    public Object getValue(){
         return value;
     }
+    @Override public int compareTo(Pair A){
+        if(key==A.getKey()){
+            return 0;
+        }
+        if(key>A.getKey()){
+            return -1;
+
+        }
+        return 1;
 
 
+    }
 
-    public int key;
-    public float value;
+    public float key;
+    public Object value;
 }
