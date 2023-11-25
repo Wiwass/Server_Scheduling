@@ -2,9 +2,17 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 
 public class Server {
+
+    Queue<Integer> QueueList;
+    boolean status;
+    boolean queueStatus;
+    int ActualProcess;
+
+
     public Server(){
-        Queue<Integer> QueueList= new ArrayDeque<Integer>();
+        QueueList = new ArrayDeque<Integer>();
         status=true;
+        queueStatus=true;
     }
     public boolean getStatus(){
         return status;
@@ -12,6 +20,7 @@ public class Server {
 
     public void AddToQueue(int category){
         QueueList.add(category);
+        queueStatus=false;
         load();
     }
     public boolean queueStatus(){
@@ -28,13 +37,9 @@ public class Server {
     }
     public int unload(){
         int temp=ActualProcess;
-        ActualProcess=-1;
         status=true;
         return temp;
     }
     
-    Queue<Integer> QueueList;
-    boolean status;
-    boolean queueStatus;
-    int ActualProcess;
+
 }

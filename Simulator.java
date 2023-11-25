@@ -21,8 +21,8 @@ public class Simulator {
     }
     static Pair timeStampGenerator(int category,int operation,Rnd random,double lambda,float currenttime,int server){
         int[]event = new int[3];
-        event[0]=category;
-        event[1]=operation;
+        event[0]=operation;
+        event[1]=category;
         event[2]=server;
         Pair timestamp = new Pair(currenttime+random.Rnd_generator(lambda), event);
         return timestamp;
@@ -151,7 +151,7 @@ public class Simulator {
         Queue<Pair> timeline = new PriorityQueue();
 
         for(int i=0;i<Numer_Category;i++){
-            timeline.add(timeStampGenerator(i, 0, randomA, lambdaA, currenttime,server_pointer));
+            timeline.add(timeStampGenerator(i, 0, randomA, lambdaA, currenttime,-1));
         }
 
         while(condition(JobCategoryCounter)<Max_numeber_Jobs){
@@ -168,13 +168,15 @@ public class Simulator {
             switch (operation) {
                 case 0:
                     /*load del server */
-                    int loadindex=RRscheduling(sereverIndex,Server_Number);
-                    Servers[loadindex].AddToQueue(category);
+                    int serverIndex=RRscheduling(sereverIndex,Server_Number);
+                    Servers[serverIndex].AddToQueue(category);
+                    timeline.add(timeStampGenerator(category, 0, randomA, lambdaA, currenttime,-1));
+                    timeline.add(timeStampGenerator(category, 1, randomA, lambdaA, currenttime,sereverIndex));
                     break;
             
                 case 1:
                     /*unload del server */
-                    int serverOutput=Servers[server_pointer].unload();
+                    int serverOutput=Servers[sereverIndex].unload();
                     JobCategoryCounter[serverOutput]=JobCategoryCounter[serverOutput]+1;
                     /*calcolo del tempo di esecuzione nel server */
                     break;
@@ -185,7 +187,7 @@ public class Simulator {
 
 
 
-System.out.println(currenttime);
+        System.out.println(currenttime);
         }
         
     }
