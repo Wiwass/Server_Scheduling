@@ -18,10 +18,10 @@ class Pair implements Comparable<Pair>{
             return 0;
         }
         if(key>A.getKey()){
-            return -1;
+            return 1;
 
         }
-        return 1;
+        return -1;
 
 
     }

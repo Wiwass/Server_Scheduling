@@ -8,6 +8,10 @@ public class Server {
     boolean queueStatus;
     int ActualProcess;
 
+    /*status: true=libero
+     *queue status: true=coda vuota
+     */
+
 
     public Server(){
         QueueList = new ArrayDeque<Integer>();
@@ -21,19 +25,20 @@ public class Server {
     public void AddToQueue(int category){
         QueueList.add(category);
         queueStatus=false;
-        load();
     }
     public boolean queueStatus(){
         return queueStatus;
     }
-    public void load(){
+    public int load(){
         if(status && !queueStatus){
             ActualProcess=QueueList.poll();
+            status=false;
         }
         if(QueueList.isEmpty()){
             queueStatus=true;
         }
-        status=false;
+        
+        return ActualProcess;
     }
     public int unload(){
         int temp=ActualProcess;

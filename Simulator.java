@@ -5,7 +5,7 @@ import java.util.*;
 /*
  * Simulator
  * LambdasA,LambdasB=[lambda di ogni categoria]
- * timestamp=[currenttime,[category,operation]]
+ * timestamp=[currenttime,[category,operation,server di riferimento]]
  */
 
 
@@ -145,8 +145,11 @@ public class Simulator {
         }
 
         float currenttime=0;
-        int sereverIndex=0;
+        int serverIndex=0;
         int server_pointer=-1;
+        int category;
+        int operation;
+        int[] event;
 
         Queue<Pair> timeline = new PriorityQueue();
 
@@ -158,9 +161,9 @@ public class Simulator {
             Pair timestamp = timeline.poll();
             float time=(float)timestamp.getKey();
 
-            int[] event=(int[])timestamp.getValue();
-            int operation=event[0];
-            int category=event[1];
+            event=(int[])timestamp.getValue();
+            operation=event[0];
+            category=event[1];
             server_pointer=event[2];
             
             currenttime=time;
@@ -168,16 +171,24 @@ public class Simulator {
             switch (operation) {
                 case 0:
                     /*load del server */
-                    int serverIndex=RRscheduling(sereverIndex,Server_Number);
+                    serverIndex=RRscheduling(serverIndex,Server_Number);
+                    if(Servers[serverIndex].getStatus()){
+                        Servers[serverIndex].AddToQueue(category);
+                        Servers[serverIndex].load();
+                        timeline.add(timeStampGenerator(category, 0, randomA, lambdaA, currenttime,-1));
+                        timeline.add(timeStampGenerator(category, 1, randomA, lambdaA, currenttime,serverIndex));
+                    }
                     Servers[serverIndex].AddToQueue(category);
                     timeline.add(timeStampGenerator(category, 0, randomA, lambdaA, currenttime,-1));
-                    timeline.add(timeStampGenerator(category, 1, randomA, lambdaA, currenttime,sereverIndex));
+
                     break;
             
                 case 1:
                     /*unload del server */
-                    int serverOutput=Servers[sereverIndex].unload();
+                    int serverOutput=Servers[server_pointer].unload();
                     JobCategoryCounter[serverOutput]=JobCategoryCounter[serverOutput]+1;
+                    category=Servers[server_pointer].load();
+                    timeline.add(timeStampGenerator(category, 1, randomA, lambdaA, currenttime,server_pointer));
                     /*calcolo del tempo di esecuzione nel server */
                     break;
             }
