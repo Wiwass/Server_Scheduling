@@ -2,10 +2,14 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.*;
 
+
 /*
  * Simulator
- * LambdasA,LambdasB=[lambda di ogni categoria]
  * timestamp=[currenttime,[category,operation,server di riferimento]]
+ * lamda index=[[(lambda arrivo),(lambda servizio),(seed arrivo),(seed servizio)],
+ *              [(lambda arrivo),(lambda servizio),(seed arrivo),(seed servizio)],
+ *               ...
+ *              [(lambda arrivo),(lambda servizio),(seed arrivo),(seed servizio)]]
  */
 
 
@@ -19,31 +23,28 @@ public class Simulator {
 
         return index;
     }
-    static Pair timeStampGenerator(int category,int operation,Rnd random,double lambda,float currenttime,int server){
+    static float Rnd_generator(double lambda, Random random){
+        
+        float r=random.nextFloat();
+        
+        return (float)((-1)*(1/lambda)*Math.log(1-r));
+
+    }
+    static Pair timeStampGenerator(int category,int operation,Random random,double lambda,float currenttime,int server){
         int[]event = new int[3];
         event[0]=operation;
         event[1]=category;
         event[2]=server;
-        Pair timestamp = new Pair(currenttime+random.Rnd_generator(lambda), event);
+        Pair timestamp = new Pair(currenttime+Rnd_generator(lambda, random), event);
         return timestamp;
     }
-    static double[] extraction(String path){
-        double[] output = new double[9];
-        try{
-
-        FileReader reader = new FileReader(path);
-        Scanner scanner = new Scanner(reader);
-        String line;
+    static double[] line_extractor(String line, int array_length){
+        double[] output= new double[array_length];
         String temp;
         int string_pointer=0;
         double parser;
         int cycle_counter=0;
-        int line_counter=-1;
-    
-    try{
-    
-        line=scanner.nextLine();
-        /*line=line.replace(".",",");*/
+
         try{
         for(int i=0;i<=line.length();i++){
             if(line.charAt(i)==','){
@@ -52,9 +53,7 @@ public class Simulator {
                 output[cycle_counter]=parser;
                 cycle_counter++;
                 string_pointer=i+1;
-
             }
-
         }}
         catch (Exception e){
             temp=line.substring(string_pointer, line.length());
@@ -62,43 +61,49 @@ public class Simulator {
             output[cycle_counter]=parser;
             cycle_counter++;      
         }
+        return output;
 
-        Boolean break_condition=true;
-        while(break_condition) {
-        line=scanner.nextLine();
-        if(line!=""){
-            break_condition=false;
+    }
+    static double[] parameters_extraction(String path){
+        double[] output = new double[5];
+        try{
+
+            FileReader reader = new FileReader(path);
+            Scanner scanner = new Scanner(reader);
+
+            String line=scanner.nextLine();
+            output=line_extractor(line, 4);
+            scanner.close();
+
         }
-         line_counter++;
-        }
-        output[8]=line_counter;
-        string_pointer=0;
+        catch(Exception e){}
+        
+        return output;
+
+    }
+    static double[][] lambda_matrix_extraction(String path,double parameters){
+        int length=(int)parameters;
+        double output[][]= new double[length][4];
+        int line_counter=0;
 
         try{
-        for(int i=0;i<=line.length();i++){
-            if(line.charAt(i)==','){
-                temp=line.substring(string_pointer, i);
-                parser=Double.parseDouble(temp);
-                output[cycle_counter]=parser;
-                cycle_counter++;
-                string_pointer=i+1;
+
+            FileReader reader = new FileReader(path);
+            Scanner scanner = new Scanner(reader);
+            String line=scanner.nextLine();
+
+            while(line_counter<parameters){
+
+                line=scanner.nextLine();
+                output[line_counter]=line_extractor(line, 4);
+                line_counter++;
 
             }
-
-        }}
-        catch (Exception e){
-            temp=line.substring(string_pointer, line.length());
-            parser=Double.parseDouble(temp);
-            output[cycle_counter]=parser;
-            
-        }
-    }
-    catch (Exception e) {
         
-    }        
-        scanner.close();
+            scanner.close();
+        }
 
-        }catch(FileNotFoundException e){}
+        catch(Exception e){}
         return output;
 
     }
@@ -111,7 +116,8 @@ public class Simulator {
 
     }
     public static void main(String[] args) {
-        double[] parameters=extraction("parameters.txt");
+        double[] parameters=parameters_extraction("parameters.txt");
+        double[][] lambda_collection=lambda_matrix_extraction("parameters.txt", parameters[1]);
 
         for(int i=0;i<parameters.length;i++){
            System.out.println(parameters[i]);
@@ -123,25 +129,21 @@ public class Simulator {
         int Numer_Category=(int)parameters[1];
         int Max_numeber_Jobs=(int)parameters[2];
         int repetitions=(int)parameters[3];
-        double lambdaA = parameters[4];
-        double lambdaB = parameters[5];
-        long seedA = (new Double(parameters[6])).longValue();
-        long seedB = (new Double(parameters[7])).longValue();
+        Random[][] list_of_Rnd = new Random[Numer_Category][2];
 
-        Rnd randomA = new Rnd(seedA);
-        Rnd randomB = new Rnd(seedB);
 
         int[] JobCategoryCounter = new int[Numer_Category];
-        double[] LambdasA = new double[Numer_Category];
-        double[] LambdasB = new double[Numer_Category];
         Server[] Servers = new Server[Server_Number];
 
         Arrays.fill(JobCategoryCounter, 1);
-        Arrays.fill(LambdasA, lambdaA);
-        Arrays.fill(LambdasB, lambdaB);
+
         for(int i=0;i<Server_Number;i++){
             Server newServer = new Server();
             Servers[i]=newServer;
+        }
+        for(int i=0;i<Numer_Category;i++){
+            list_of_Rnd[i][0] = new Random((long)lambda_collection[i][2]);
+            list_of_Rnd[i][1] = new Random((long)lambda_collection[i][3]);
         }
 
         float currenttime=0;
@@ -154,7 +156,7 @@ public class Simulator {
         Queue<Pair> timeline = new PriorityQueue();
 
         for(int i=0;i<Numer_Category;i++){
-            timeline.add(timeStampGenerator(i, 0, randomA, lambdaA, currenttime,-1));
+            timeline.add(timeStampGenerator(i, 0, list_of_Rnd[i][0], lambda_collection[i][0], currenttime,-1));
         }
 
         while(condition(JobCategoryCounter)<Max_numeber_Jobs){
@@ -175,11 +177,11 @@ public class Simulator {
                     if(Servers[serverIndex].getStatus()){
                         Servers[serverIndex].AddToQueue(category);
                         Servers[serverIndex].load();
-                        timeline.add(timeStampGenerator(category, 0, randomA, lambdaA, currenttime,-1));
-                        timeline.add(timeStampGenerator(category, 1, randomA, lambdaA, currenttime,serverIndex));
+                        timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
+                        timeline.add(timeStampGenerator(category, 1, list_of_Rnd[category][1], lambda_collection[category][1], currenttime,serverIndex));
                     }
                     Servers[serverIndex].AddToQueue(category);
-                    timeline.add(timeStampGenerator(category, 0, randomA, lambdaA, currenttime,-1));
+                    timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
 
                     break;
             
@@ -188,7 +190,7 @@ public class Simulator {
                     int serverOutput=Servers[server_pointer].unload();
                     JobCategoryCounter[serverOutput]=JobCategoryCounter[serverOutput]+1;
                     category=Servers[server_pointer].load();
-                    timeline.add(timeStampGenerator(category, 1, randomA, lambdaA, currenttime,server_pointer));
+                    timeline.add(timeStampGenerator(category, 1, list_of_Rnd[category][1], lambda_collection[category][1], currenttime,server_pointer));
                     /*calcolo del tempo di esecuzione nel server */
                     break;
             }
