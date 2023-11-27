@@ -4,12 +4,21 @@ import java.util.*;
 
 
 /*
- * Simulator
+ * Simulator variables index:
+ * 
  * timestamp=[currenttime,[category,operation,server di riferimento]]
- * lamda index=[[(lambda arrivo),(lambda servizio),(seed arrivo),(seed servizio)],
- *              [(lambda arrivo),(lambda servizio),(seed arrivo),(seed servizio)],
- *               ...
- *              [(lambda arrivo),(lambda servizio),(seed arrivo),(seed servizio)]]
+ * 
+ * collections_of_lambdas=[[(lambda arrivo),(lambda servizio),(seed arrivo),(seed servizio)],
+ *                        [(lambda arrivo),(lambda servizio),(seed arrivo),(seed servizio)],
+ *                          ...
+ *                        [(lambda arrivo),(lambda servizio),(seed arrivo),(seed servizio)]]
+ * (indice cateory)
+ * 
+ * collection_of_Rnd=[[rnd_arrivo,rnd_servizio],
+ *                    [rnd_arrivo,rnd_servizio],
+ *                     ...
+ *                    [rnd_arrivo,rnd_servizio]]
+ * (indice cateory)
  */
 
 
@@ -116,13 +125,17 @@ public class Simulator {
 
     }
     public static void main(String[] args) {
+
+    
         double[] parameters=parameters_extraction("parameters.txt");
         double[][] lambda_collection=lambda_matrix_extraction("parameters.txt", parameters[1]);
 
-        for(int i=0;i<parameters.length;i++){
-           System.out.println(parameters[i]);
-        }
 
+        System.out.print("|");
+        for(int i=0;i<parameters.length;i++){
+           System.out.print(parameters[i]+"|");
+        }
+        System.out.println();
 
 
         int Server_Number=(int)parameters[0];
@@ -152,6 +165,13 @@ public class Simulator {
         int category;
         int operation;
         int[] event;
+        int counter=0;
+
+        System.out.println("----------------------");
+
+    while(counter<=repetitions){
+
+        counter++;
 
         Queue<Pair> timeline = new PriorityQueue();
 
@@ -169,7 +189,6 @@ public class Simulator {
             server_pointer=event[2];
             
             currenttime=time;
-
             switch (operation) {
                 case 0:
                     /*load del server */
@@ -184,7 +203,7 @@ public class Simulator {
                     timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
 
                     break;
-            
+
                 case 1:
                     /*unload del server */
                     int serverOutput=Servers[server_pointer].unload();
@@ -197,10 +216,13 @@ public class Simulator {
 
 
         }
+        System.out.println("ETA:"+currenttime);
+        
+        System.out.println("----------------------");
 
 
+    }
 
-        System.out.println(currenttime);
         }
         
     }
