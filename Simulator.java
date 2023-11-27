@@ -1,7 +1,80 @@
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
+class Pair implements Comparable<Pair>{
+    public Pair (float insert_key, Object insert_value){
+        key=insert_key;
+        value=insert_value;
+    } 
+    public float getKey() {
+        return key;
+    }
+    public Object getValue(){
+        return value;
+    }
+    @Override public int compareTo(Pair A){
+        if(key==A.getKey()){
+            return 0;
+        }
+        if(key>A.getKey()){
+            return 1;
+        }
+        return -1;
+    }
+
+    public float key;
+    public Object value;
+}
+class Server {
+
+    Queue<Integer> QueueList;
+    boolean status;
+    boolean queueStatus;
+    int ActualProcess;
+
+    /*status: true=libero
+     *queue status: true=coda vuota
+     */
+
+
+    public Server(){
+        QueueList = new ArrayDeque<Integer>();
+        status=true;
+        queueStatus=true;
+    }
+    public boolean getStatus(){
+        return status;
+    }
+
+    public void AddToQueue(int category){
+        QueueList.add(category);
+        queueStatus=false;
+    }
+    public boolean queueStatus(){
+        return queueStatus;
+    }
+    public int load(){
+        if(status && !queueStatus){
+            ActualProcess=QueueList.poll();
+            status=false;
+        }
+        if(QueueList.isEmpty()){
+            queueStatus=true;
+        }
+        
+        return ActualProcess;
+    }
+    public int unload(){
+        int temp=ActualProcess;
+        status=true;
+        return temp;
+    }
+    
+
+}
 
 /*
  * Simulator variables index:
@@ -223,48 +296,5 @@ public class Simulator {
 
     }
 
-        }
-        
+        }   
     }
-
-
-    
-/*Cimitero delle cose:
- * 
- * 
- * 
- * 
-double[] Jobs = new double[Max_numeber_Jobs];
-        for (int i=0;i<Jobs.length;i++){
-            Jobs[i]=randomA.Rnd_generator(lambdaA);
-            System.out.println(Jobs[i]);
-        }
-        double[] waits = new double[Max_numeber_Jobs];
-        for (int i=0;i<waits.length;i++){
-            waits[i]=randomB.Rnd_generator(lambdaB);
-            System.out.println(waits[i]);
-
-
-
-public class Heap_Implementation {
-    public Heap_Implementation(int initial_entry){
-        Heap = new Pair[initial_entry];
-        for(int i=0;i<initial_entry;i++){
-
-            Pair entry = new Pair(assigned_priority_key, value);
-
-
-
-        }
-
-        
-
-
-    }
-
-private int entry_number;
-private Pair[] Heap;
-}
-
-
- */
