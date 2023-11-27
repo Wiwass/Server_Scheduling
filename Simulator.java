@@ -147,7 +147,7 @@ public class Simulator {
 
     }
     static double[] parameters_extraction(String path){
-        double[] output = new double[5];
+        double[] output = new double[4];
         try{
 
             FileReader reader = new FileReader(path);
@@ -158,7 +158,7 @@ public class Simulator {
             scanner.close();
 
         }
-        catch(Exception e){}
+        catch(FileNotFoundException e){}
         
         return output;
 
@@ -185,7 +185,7 @@ public class Simulator {
             scanner.close();
         }
 
-        catch(Exception e){}
+        catch(FileNotFoundException e){}
         return output;
 
     }
