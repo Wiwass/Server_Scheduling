@@ -1,8 +1,6 @@
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.*;
-import java.util.ArrayDeque;
-import java.util.Queue;
 
 class Pair implements Comparable<Pair>{
     public Pair (float insert_key, Object insert_value){
@@ -14,6 +12,9 @@ class Pair implements Comparable<Pair>{
     }
     public Object getValue(){
         return value;
+    }
+    public void keySwap(double newKey){
+        key=(float)newKey;         /*motlo finniky */
     }
     @Override public int compareTo(Pair A){
         if(key==A.getKey()){
@@ -105,6 +106,50 @@ public class Simulator {
 
         return index;
     }
+    static PriorityQueue<Pair> loadBalancerUpdater(PriorityQueue<Pair> loadBalancer,double lamda_category,int operation,int server){
+        Pair temp;
+        double newKey;
+        switch (operation) {
+            case 0:
+                temp = (Pair)loadBalancer.peek();
+                newKey=temp.getKey()+(1/lamda_category);
+                temp.keySwap(newKey);
+                loadBalancer.poll();
+                loadBalancer.add(temp);
+                break;
+        
+            case 1:
+            
+                Stack<Pair> stack = new Stack<>();
+                Pair stack_element = loadBalancer.poll();
+                int current_server = (int)stack_element.getValue();
+                int counter=0;
+
+                while(current_server!=server){
+                    stack.add(stack_element);
+                    stack_element = loadBalancer.poll();
+                    current_server = (int)stack_element.getValue();
+                    
+                    counter++;
+                }
+                
+                newKey=stack_element.getKey()-(1/lamda_category);
+                stack_element.keySwap(newKey);
+
+                loadBalancer.add(stack_element);
+                
+                for(int i=0;i<counter;i++){
+                    loadBalancer.add(stack.pop());
+                }
+                
+                break;
+        }
+        return loadBalancer;
+    }
+    static int loadBalancer_index(PriorityQueue<Pair> loadBalancer){
+        int output=(int)loadBalancer.peek().getValue();
+        return output;
+    }
     static float Rnd_generator(double lambda, Random random){
         
         float r=random.nextFloat();
@@ -147,14 +192,14 @@ public class Simulator {
 
     }
     static double[] parameters_extraction(String path){
-        double[] output = new double[4];
+        double[] output = new double[5];
         try{
 
             FileReader reader = new FileReader(path);
             Scanner scanner = new Scanner(reader);
 
             String line=scanner.nextLine();
-            output=line_extractor(line, 4);
+            output=line_extractor(line, 5);
             scanner.close();
 
         }
@@ -199,54 +244,59 @@ public class Simulator {
     }
     public static void main(String[] args) {
 
-    
+
+
+    /*matrici e code necessarie per l'esecuzione del programma */
         double[] parameters=parameters_extraction("parameters.txt");
         double[][] lambda_collection=lambda_matrix_extraction("parameters.txt", parameters[1]);
-
-
-        System.out.print("|");
-        for(int i=0;i<parameters.length;i++){
-           System.out.print(parameters[i]+"|");
-        }
-        System.out.println();
-
-
+        PriorityQueue<Pair> loadBalancer= new PriorityQueue<>();
+    /*parametri passati dal file testuale ed elementi utili per il filling*/ 
         int Server_Number=(int)parameters[0];
         int Numer_Category=(int)parameters[1];
         int Max_numeber_Jobs=(int)parameters[2];
         int repetitions=(int)parameters[3];
+        int scheduling_policy=(int)parameters[4];
         Random[][] list_of_Rnd = new Random[Numer_Category][2];
-
-
         int[] JobCategoryCounter = new int[Numer_Category];
         Server[] Servers = new Server[Server_Number];
+        Pair temp;
 
+        
+    /*filling adeguato degli array prima di iniziare l'esecuzione della simulazione */
         Arrays.fill(JobCategoryCounter, 1);
-
-        for(int i=0;i<Server_Number;i++){
+        System.out.print("|");
+        for(int i=0;i<parameters.length;i++){   /*creazione dei primi jobs (uno per parametro) */
+           System.out.print(parameters[i]+"|");
+        }
+        System.out.println();
+        for(int i=0;i<Server_Number;i++){    /*istanziazione dei server e del loadBalancer*/
             Server newServer = new Server();
             Servers[i]=newServer;
+            temp = new Pair(0, i);
+            loadBalancer.add(temp);
         }
-        for(int i=0;i<Numer_Category;i++){
+        for(int i=0;i<Numer_Category;i++){   /*creazione dei seed random per le rispettive categorie */
             list_of_Rnd[i][0] = new Random((long)lambda_collection[i][2]);
             list_of_Rnd[i][1] = new Random((long)lambda_collection[i][3]);
         }
 
-        float currenttime=0;
-        int serverIndex=0;
-        int server_pointer=-1;
-        int category;
-        int operation;
-        int[] event;
-        int counter=0;
+    int counter=0;
+    
 
         System.out.println("----------------------");
 
     while(counter<=repetitions){
 
+        /*parametri della simulazione */ 
+        int serverIndex=0;
+        int server_pointer=-1;
+        int category;
+        int operation;
+        float currenttime=0;
+
         counter++;
 
-        Queue<Pair> timeline = new PriorityQueue();
+        PriorityQueue<Pair> timeline = new PriorityQueue<>();
 
         for(int i=0;i<Numer_Category;i++){
             timeline.add(timeStampGenerator(i, 0, list_of_Rnd[i][0], lambda_collection[i][0], currenttime,-1));
@@ -256,7 +306,7 @@ public class Simulator {
             Pair timestamp = timeline.poll();
             float time=(float)timestamp.getKey();
 
-            event=(int[])timestamp.getValue();
+            int[] event=(int[])timestamp.getValue();
             operation=event[0];
             category=event[1];
             server_pointer=event[2];
@@ -265,10 +315,18 @@ public class Simulator {
             switch (operation) {
                 case 0:
                     /*load del server */
-                    serverIndex=RRscheduling(serverIndex,Server_Number);
+                    if(scheduling_policy==0){
+                        serverIndex=RRscheduling(serverIndex,Server_Number);
+                    }
+                    if(scheduling_policy==1){
+                        serverIndex=loadBalancer_index(loadBalancer);
+                    }
                     if(Servers[serverIndex].getStatus()){
                         Servers[serverIndex].AddToQueue(category);
                         Servers[serverIndex].load();
+                        if(scheduling_policy==1){
+                         loadBalancer=loadBalancerUpdater(loadBalancer, lambda_collection[category][1], 0,-1);
+                        }
                         timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
                         timeline.add(timeStampGenerator(category, 1, list_of_Rnd[category][1], lambda_collection[category][1], currenttime,serverIndex));
                     }
@@ -280,6 +338,9 @@ public class Simulator {
                 case 1:
                     /*unload del server */
                     int serverOutput=Servers[server_pointer].unload();
+                    if(scheduling_policy==1){
+                        loadBalancer=loadBalancerUpdater(loadBalancer, lambda_collection[serverOutput][1], 1,server_pointer);
+                    }
                     JobCategoryCounter[serverOutput]=JobCategoryCounter[serverOutput]+1;
                     category=Servers[server_pointer].load();
                     timeline.add(timeStampGenerator(category, 1, list_of_Rnd[category][1], lambda_collection[category][1], currenttime,server_pointer));
@@ -290,8 +351,34 @@ public class Simulator {
 
         }
         System.out.println("ETA:"+currenttime);
+        System.out.print("|");
+        for(int i=0;i<JobCategoryCounter.length;i++){   /*creazione dei primi jobs (uno per parametro) */
+           System.out.print(JobCategoryCounter[i]+"|");
+        }
+
+        
+        System.out.println();
+        if(scheduling_policy==1){
+            System.out.println("-----------------");
+            System.out.println("cambio della scheduling policy");
+        }
+        scheduling_policy=0;
+        
+
+        Arrays.fill(JobCategoryCounter, 1);
+        for(int i=0;i<Server_Number;i++){    /*istanziazione dei server e del loadBalancer*/
+            Server newServer = new Server();
+            Servers[i]=newServer;
+            temp = new Pair(0, i);
+            loadBalancer.add(temp);
+        }
+        timeline.clear();
         
         System.out.println("----------------------");
+        loadBalancer.clear();;
+        
+
+
 
 
     }
