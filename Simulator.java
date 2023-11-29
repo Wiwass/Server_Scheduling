@@ -264,9 +264,10 @@ public class Simulator {
         System.out.println();
         for(int i=0;i<Server_Number;i++){    /*istanziazione dei server e del loadBalancer*/
             Server newServer = new Server();
-            Servers[i]=newServer;
             temp = new Pair(0, i);
+            newServer.link_to_loadBalancer(temp);
             loadBalancer.add(temp);
+            Servers[i]=newServer;
         }
         for(int i=0;i<Numer_Category;i++){   /*creazione dei seed random per le rispettive categorie */
             list_of_Rnd[i][0] = new Random((long)lambda_collection[i][2]);
@@ -348,27 +349,28 @@ public class Simulator {
         for(int i=0;i<JobCategoryCounter.length;i++){   /*creazione dei primi jobs (uno per parametro) */
            System.out.print(JobCategoryCounter[i]+"|");
         }
-
-        
         System.out.println();
-        if(scheduling_policy==1){
+        if(scheduling_policy==0){
             System.out.println("-----------------");
-            System.out.println("cambio della scheduling policy");
+            System.out.println("cambio della scheduling policy 0->1");
         }
-        scheduling_policy=0;
+        scheduling_policy=1;
         
 
         Arrays.fill(JobCategoryCounter, 1);
+
+        loadBalancer.clear();
         for(int i=0;i<Server_Number;i++){    /*istanziazione dei server e del loadBalancer*/
             Server newServer = new Server();
-            Servers[i]=newServer;
             temp = new Pair(0, i);
+            newServer.link_to_loadBalancer(temp);
             loadBalancer.add(temp);
+            Servers[i]=newServer;
         }
         timeline.clear();
         
         System.out.println("----------------------");
-        loadBalancer.clear();;
+        
         
 
 
