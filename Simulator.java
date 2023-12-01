@@ -25,7 +25,6 @@ class Pair implements Comparable<Pair>{
         }
         return -1;
     }
-
     public float key;
     public Object value;
 }
@@ -35,6 +34,7 @@ class Server {
     boolean status;
     boolean queueStatus;
     int ActualProcess;
+    Pair pointer;
 
     /*status: true=libero
      *queue status: true=coda vuota
@@ -73,6 +73,12 @@ class Server {
         status=true;
         return temp;
     }
+    public void link_to_loadBalancer(Pair pair){
+        pointer=pair;
+    }
+    public Pair load_status(){
+        return pointer;
+    }
     
 
 }
@@ -106,7 +112,7 @@ public class Simulator {
 
         return index;
     }
-    static PriorityQueue<Pair> loadBalancerUpdater(PriorityQueue<Pair> loadBalancer,double lamda_category,int operation,int server){
+    static PriorityQueue<Pair> loadBalancerUpdater(PriorityQueue<Pair> loadBalancer,double lamda_category,int operation,int server,Server[] Servers){
         Pair temp;
         double newKey;
         switch (operation) {
@@ -115,32 +121,19 @@ public class Simulator {
                 newKey=temp.getKey()+(1/lamda_category);
                 temp.keySwap(newKey);
                 loadBalancer.poll();
+                Servers[(int)temp.getValue()].link_to_loadBalancer(temp);
                 loadBalancer.add(temp);
                 break;
         
             case 1:
+                temp = (Servers[server]).load_status();
+                loadBalancer.remove(temp);
+                newKey = temp.getKey()-(1/lamda_category);
+                temp.keySwap(newKey);
+                Servers[(int)temp.getValue()].link_to_loadBalancer(temp);
+                loadBalancer.add(temp);
             
-                Stack<Pair> stack = new Stack<>();
-                Pair stack_element = loadBalancer.poll();
-                int current_server = (int)stack_element.getValue();
-                int counter=0;
-
-                while(current_server!=server){
-                    stack.add(stack_element);
-                    stack_element = loadBalancer.poll();
-                    current_server = (int)stack_element.getValue();
-                    
-                    counter++;
-                }
                 
-                newKey=stack_element.getKey()-(1/lamda_category);
-                stack_element.keySwap(newKey);
-
-                loadBalancer.add(stack_element);
-                
-                for(int i=0;i<counter;i++){
-                    loadBalancer.add(stack.pop());
-                }
                 
                 break;
         }
@@ -325,7 +318,7 @@ public class Simulator {
                         Servers[serverIndex].AddToQueue(category);
                         Servers[serverIndex].load();
                         if(scheduling_policy==1){
-                         loadBalancer=loadBalancerUpdater(loadBalancer, lambda_collection[category][1], 0,-1);
+                         loadBalancer=loadBalancerUpdater(loadBalancer, lambda_collection[category][1], 0,-1,Servers);
                         }
                         timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
                         timeline.add(timeStampGenerator(category, 1, list_of_Rnd[category][1], lambda_collection[category][1], currenttime,serverIndex));
@@ -339,7 +332,7 @@ public class Simulator {
                     /*unload del server */
                     int serverOutput=Servers[server_pointer].unload();
                     if(scheduling_policy==1){
-                        loadBalancer=loadBalancerUpdater(loadBalancer, lambda_collection[serverOutput][1], 1,server_pointer);
+                        loadBalancer=loadBalancerUpdater(loadBalancer, lambda_collection[serverOutput][1], 1,server_pointer,Servers);
                     }
                     JobCategoryCounter[serverOutput]=JobCategoryCounter[serverOutput]+1;
                     category=Servers[server_pointer].load();
@@ -385,3 +378,31 @@ public class Simulator {
 
         }   
     }
+
+
+
+
+/*cimitero 2.0
+ * 
+ * Stack<Pair> stack = new Stack<>();
+                Pair stack_element = loadBalancer.poll();
+                int current_server = (int)stack_element.getValue();
+                int counter=0;
+
+                while(current_server!=server){
+                    stack.add(stack_element);
+                    stack_element = loadBalancer.poll();
+                    current_server = (int)stack_element.getValue();
+                    
+                    counter++;
+                }
+                
+                newKey=stack_element.getKey()-(1/lamda_category);
+                stack_element.keySwap(newKey);
+
+                loadBalancer.add(stack_element);
+                
+                for(int i=0;i<counter;i++){
+                    loadBalancer.add(stack.pop());
+                }
+ */
