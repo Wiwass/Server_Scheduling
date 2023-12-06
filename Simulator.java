@@ -45,6 +45,7 @@ class Server {
         QueueList = new ArrayDeque<Integer>();
         status=true;
         queueStatus=true;
+        ActualProcess=-1;
     }
     public boolean getStatus(){
         return status;
@@ -232,16 +233,35 @@ public class Simulator {
         for(int i=0;i<array.length;i++){
             sum=sum+array[i];
         }
-        return sum-array.length;
+        return sum;
 
+    }
+    static void timeline_print(PriorityQueue<Pair> x){
+        Pair print;
+        int [] temp;
+        Stack<Pair> stack = new Stack<Pair>();
+        while(!x.isEmpty()){
+            print=x.poll();
+            stack.add(print);
+
+            System.out.println(print.getKey());
+            temp=(int[])print.getValue();
+            System.out.println(" o:"+temp[0]+"/"+"c:"+temp[1]+"/"+"s:"+temp[2]);
+            System.out.println();
+        }
+        while(!stack.isEmpty()){
+            x.add(stack.pop());
+        }
+        System.out.println("---------------");
     }
     public static void main(String[] args) {
 
 
 
     /*matrici e code necessarie per l'esecuzione del programma */
-        double[] parameters=parameters_extraction("parameters.txt");
-        double[][] lambda_collection=lambda_matrix_extraction("parameters.txt", parameters[1]);
+        String path="IO-EXAMPLES/input_K3_H2_N8_R1_P0.in";
+        double[] parameters=parameters_extraction(path);
+        double[][] lambda_collection=lambda_matrix_extraction(path, parameters[1]);
         PriorityQueue<Pair> loadBalancer= new PriorityQueue<>();
     /*parametri passati dal file testuale ed elementi utili per il filling*/ 
         int Server_Number=(int)parameters[0];
@@ -256,7 +276,7 @@ public class Simulator {
 
         
     /*filling adeguato degli array prima di iniziare l'esecuzione della simulazione */
-        Arrays.fill(JobCategoryCounter, 1);
+        Arrays.fill(JobCategoryCounter, 0);
         System.out.print("|");
         for(int i=0;i<parameters.length;i++){   /*creazione dei primi jobs (uno per parametro) */
            System.out.print(parameters[i]+"|");
@@ -274,7 +294,7 @@ public class Simulator {
             list_of_Rnd[i][1] = new Random((long)lambda_collection[i][3]);
         }
 
-    int counter=0;
+    int counter=1;
     
 
         System.out.println("----------------------");
@@ -282,30 +302,32 @@ public class Simulator {
     while(counter<=repetitions){
 
         /*parametri della simulazione */ 
-        int serverIndex=0;
+        int serverIndex=-1;
         int server_pointer=-1;
         int category;
         int operation;
         float currenttime=0;
 
         counter++;
-
+ 
         PriorityQueue<Pair> timeline = new PriorityQueue<>();
 
         for(int i=0;i<Numer_Category;i++){
             timeline.add(timeStampGenerator(i, 0, list_of_Rnd[i][0], lambda_collection[i][0], currenttime,-1));
         }
+        timeline_print(timeline);
 
         while(condition(JobCategoryCounter)<Max_numeber_Jobs){
             Pair timestamp = timeline.poll();
-            float time=(float)timestamp.getKey();
 
+            float time=(float)timestamp.getKey();
             int[] event=(int[])timestamp.getValue();
             operation=event[0];
             category=event[1];
             server_pointer=event[2];
             
             currenttime=time;
+            
             switch (operation) {
                 case 0:
                     /*load del server */
@@ -324,9 +346,10 @@ public class Simulator {
                         timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
                         timeline.add(timeStampGenerator(category, 1, list_of_Rnd[category][1], lambda_collection[category][1], currenttime,serverIndex));
                     }
-                    Servers[serverIndex].AddToQueue(category);
-                    timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
-
+                    else{
+                        Servers[serverIndex].AddToQueue(category);
+                        timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
+                    }
                     break;
 
                 case 1:
@@ -337,10 +360,27 @@ public class Simulator {
                     }
                     JobCategoryCounter[serverOutput]=JobCategoryCounter[serverOutput]+1;
                     category=Servers[server_pointer].load();
+                    /*timeline.add(timeStampGenerator(serverOutput, 0, list_of_Rnd[serverOutput][0], lambda_collection[serverOutput][0], currenttime, -1)); */
                     timeline.add(timeStampGenerator(category, 1, list_of_Rnd[category][1], lambda_collection[category][1], currenttime,server_pointer));
                     /*calcolo del tempo di esecuzione nel server */
                     break;
             }
+
+
+
+            /*struttura di debug */
+            System.out.println("time:"+currenttime+","+""+",ct:"+category+",op:"+operation+",serverI:"+serverIndex+",serverP:"+server_pointer);
+            System.out.print("|");
+            for(int i=0;i<JobCategoryCounter.length;i++){   /*creazione dei primi jobs (uno per parametro) */
+                System.out.print(JobCategoryCounter[i]+"|");
+            }
+            System.out.println();
+            System.out.println();
+            if(false){
+                timeline_print(timeline);
+                System.out.println();
+            }
+
 
 
         }
@@ -349,14 +389,7 @@ public class Simulator {
         for(int i=0;i<JobCategoryCounter.length;i++){   /*creazione dei primi jobs (uno per parametro) */
            System.out.print(JobCategoryCounter[i]+"|");
         }
-        System.out.println();
-        if(scheduling_policy==0){
-            System.out.println("-----------------");
-            System.out.println("cambio della scheduling policy 0->1");
-        }
-        scheduling_policy=1;
         
-
         Arrays.fill(JobCategoryCounter, 1);
 
         loadBalancer.clear();
@@ -368,7 +401,7 @@ public class Simulator {
             Servers[i]=newServer;
         }
         timeline.clear();
-        
+        System.out.println();
         System.out.println("----------------------");
         
         
@@ -407,4 +440,13 @@ public class Simulator {
                 for(int i=0;i<counter;i++){
                     loadBalancer.add(stack.pop());
                 }
+            
+            
+            
+        System.out.println(scheduling_policy);
+            if(scheduling_policy==0){
+            System.out.println("-----------------");
+            System.out.print("cambio della scheduling policy"+"\n"+scheduling_policy+"->");
+        }
+        scheduling_policy=1;
  */
