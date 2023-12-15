@@ -279,7 +279,7 @@ public class Simulator {
         Arrays.fill(JobCategoryCounter, 0);
         System.out.print("|");
         for(int i=0;i<parameters.length;i++){   /*creazione dei primi jobs (uno per parametro) */
-           System.out.print(parameters[i]+"|");
+           System.out.print((int)parameters[i]+"|");
         }
         System.out.println();
         for(int i=0;i<Server_Number;i++){    /*istanziazione dei server e del loadBalancer*/
