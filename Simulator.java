@@ -228,12 +228,14 @@ public class Simulator {
         return output;
 
     }
-    static int condition(int[] array){
-        int sum=0;
+    static boolean condition(Server[] array){
+        boolean cond=true;
         for(int i=0;i<array.length;i++){
-            sum=sum+array[i];
+            if(!array[i].getStatus()){
+                cond=false;
+            }
         }
-        return sum;
+        return cond;
 
     }
     static void timeline_print(PriorityQueue<Pair> x){
@@ -307,6 +309,7 @@ public class Simulator {
         int category;
         int operation;
         float currenttime=0;
+        int generated_events=0;
 
         counter++;
  
@@ -314,10 +317,11 @@ public class Simulator {
 
         for(int i=0;i<Numer_Category;i++){
             timeline.add(timeStampGenerator(i, 0, list_of_Rnd[i][0], lambda_collection[i][0], currenttime,-1));
+            generated_events++;
         }
         timeline_print(timeline);
 
-        while(condition(JobCategoryCounter)<Max_numeber_Jobs){
+        while(!timeline.isEmpty()){
             Pair timestamp = timeline.poll();
 
             float time=(float)timestamp.getKey();
@@ -337,18 +341,22 @@ public class Simulator {
                     if(scheduling_policy==1){
                         serverIndex=loadBalancer_index(loadBalancer);
                     }
-                    if(Servers[serverIndex].getStatus()){
+                    if(Servers[serverIndex].getStatus() && generated_events<Max_numeber_Jobs){
                         Servers[serverIndex].AddToQueue(category);
                         Servers[serverIndex].load();
                         if(scheduling_policy==1){
                          loadBalancer=loadBalancerUpdater(loadBalancer, lambda_collection[category][1], 0,-1,Servers);
                         }
                         timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
+                        generated_events++;
                         timeline.add(timeStampGenerator(category, 1, list_of_Rnd[category][1], lambda_collection[category][1], currenttime,serverIndex));
                     }
                     else{
                         Servers[serverIndex].AddToQueue(category);
-                        timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
+                        if(generated_events<Max_numeber_Jobs){
+                         timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
+                         generated_events++;
+                        }
                     }
                     break;
 
@@ -359,9 +367,11 @@ public class Simulator {
                         loadBalancer=loadBalancerUpdater(loadBalancer, lambda_collection[serverOutput][1], 1,server_pointer,Servers);
                     }
                     JobCategoryCounter[serverOutput]=JobCategoryCounter[serverOutput]+1;
-                    category=Servers[server_pointer].load();
-                    /*timeline.add(timeStampGenerator(serverOutput, 0, list_of_Rnd[serverOutput][0], lambda_collection[serverOutput][0], currenttime, -1)); */
-                    timeline.add(timeStampGenerator(category, 1, list_of_Rnd[category][1], lambda_collection[category][1], currenttime,server_pointer));
+                    if(!Servers[server_pointer].queueStatus()){
+                        category=Servers[server_pointer].load();
+                        /*timeline.add(timeStampGenerator(serverOutput, 0, list_of_Rnd[serverOutput][0], lambda_collection[serverOutput][0], currenttime, -1)); */
+                        timeline.add(timeStampGenerator(category, 1, list_of_Rnd[category][1], lambda_collection[category][1], currenttime,server_pointer));
+                    }
                     /*calcolo del tempo di esecuzione nel server */
                     break;
             }
@@ -376,7 +386,7 @@ public class Simulator {
             }
             System.out.println();
             System.out.println();
-            if(false){
+            if(true){
                 timeline_print(timeline);
                 System.out.println();
             }
