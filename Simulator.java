@@ -14,7 +14,7 @@ class Pair implements Comparable<Pair>{
         return value;
     }
     public void keySwap(double newKey){
-        key=(float)newKey;         /*motlo finniky */
+        key=(float)newKey;        
     }
     @Override public int compareTo(Pair A){
         if(key==A.getKey()){
@@ -30,10 +30,10 @@ class Pair implements Comparable<Pair>{
 }
 class Server {
 
-    Queue<Integer> QueueList;
+    Queue<Pair> QueueList;
     boolean status;
     boolean queueStatus;
-    int ActualProcess;
+    Pair ActualProcess;
     Pair pointer;
 
     /*status: true=libero
@@ -42,23 +42,24 @@ class Server {
 
 
     public Server(){
-        QueueList = new ArrayDeque<Integer>();
+        QueueList = new ArrayDeque<Pair>();
         status=true;
         queueStatus=true;
-        ActualProcess=-1;
+        ActualProcess=new Pair(0,0);
     }
     public boolean getStatus(){
         return status;
     }
 
-    public void AddToQueue(int category){
-        QueueList.add(category);
+    public void AddToQueue(float entry_time,int category){
+        Pair queue_element = new Pair(entry_time,category);
+        QueueList.add(queue_element);
         queueStatus=false;
     }
     public boolean queueStatus(){
         return queueStatus;
     }
-    public int load(){
+    public Pair load(){
         if(status && !queueStatus){
             ActualProcess=QueueList.poll();
             status=false;
@@ -69,8 +70,8 @@ class Server {
         
         return ActualProcess;
     }
-    public int unload(){
-        int temp=ActualProcess;
+    public Pair unload(){
+        Pair temp=ActualProcess;
         status=true;
         return temp;
     }
@@ -84,10 +85,9 @@ class Server {
 
 }
 
-/*
- * Simulator variables index:
+/*Simulator variables index:
  * 
- * timestamp=[currenttime,[category,operation,server di riferimento]]
+ * timestamp=[currenttime,[category,operation,server di riferimento,t_attesa o t_servizio]]
  * 
  * collections_of_lambdas=[[(lambda arrivo),(lambda servizio),(seed arrivo),(seed servizio)],
  *                        [(lambda arrivo),(lambda servizio),(seed arrivo),(seed servizio)],
@@ -152,11 +152,13 @@ public class Simulator {
 
     }
     static Pair timeStampGenerator(int category,int operation,Random random,double lambda,float currenttime,int server){
-        int[]event = new int[3];
+        float[]event = new float[4];
         event[0]=operation;
         event[1]=category;
         event[2]=server;
-        Pair timestamp = new Pair(currenttime+Rnd_generator(lambda, random), event);
+        float delta_time=Rnd_generator(lambda, random);
+        event[3]=currenttime;
+        Pair timestamp = new Pair(currenttime+delta_time, event);
         return timestamp;
     }
     static double[] line_extractor(String line, int array_length){
@@ -228,16 +230,6 @@ public class Simulator {
         return output;
 
     }
-    static boolean condition(Server[] array){
-        boolean cond=true;
-        for(int i=0;i<array.length;i++){
-            if(!array[i].getStatus()){
-                cond=false;
-            }
-        }
-        return cond;
-
-    }
     static void timeline_print(PriorityQueue<Pair> x){
         Pair print;
         int [] temp;
@@ -276,14 +268,25 @@ public class Simulator {
         Server[] Servers = new Server[Server_Number];
         Pair temp;
 
+        boolean debug=false;
+
         
     /*filling adeguato degli array prima di iniziare l'esecuzione della simulazione */
         Arrays.fill(JobCategoryCounter, 0);
-        System.out.print("|");
-        for(int i=0;i<parameters.length;i++){   /*creazione dei primi jobs (uno per parametro) */
-           System.out.print((int)parameters[i]+"|");
+        if(debug){
+            System.out.print("|");
+            for(int i=0;i<parameters.length;i++){   /*creazione dei primi jobs (uno per parametro) */
+            System.out.print((int)parameters[i]+"|");
+            }
+            System.out.println();
         }
-        System.out.println();
+        if(!debug){
+            for(int i=0;i<parameters.length;i++){   /*creazione dei primi jobs (uno per parametro) */
+                if(i!=0){System.out.print(",");}
+                System.out.print((int)parameters[i]);
+            }
+            System.out.println();
+        }
         for(int i=0;i<Server_Number;i++){    /*istanziazione dei server e del loadBalancer*/
             Server newServer = new Server();
             temp = new Pair(0, i);
@@ -298,8 +301,9 @@ public class Simulator {
 
     int counter=1;
     
-
+    if(debug){
         System.out.println("----------------------");
+    }    
 
     while(counter<=repetitions){
 
@@ -310,6 +314,9 @@ public class Simulator {
         int operation;
         float currenttime=0;
         int generated_events=0;
+        float delta_time=0;
+        float[][] server_last_queue_time= new float[Server_Number][2];
+        Pair in = new Pair(0, 0);
 
         counter++;
  
@@ -319,16 +326,19 @@ public class Simulator {
             timeline.add(timeStampGenerator(i, 0, list_of_Rnd[i][0], lambda_collection[i][0], currenttime,-1));
             generated_events++;
         }
-        timeline_print(timeline);
+        if(debug){
+            timeline_print(timeline);
+        }
 
         while(!timeline.isEmpty()){
             Pair timestamp = timeline.poll();
 
             float time=(float)timestamp.getKey();
-            int[] event=(int[])timestamp.getValue();
-            operation=event[0];
-            category=event[1];
-            server_pointer=event[2];
+            float[] event=(float[])timestamp.getValue();
+            operation=(int)event[0];
+            category=(int)event[1];
+            server_pointer=(int)event[2];
+            delta_time=time-event[3];
             
             currenttime=time;
             
@@ -338,11 +348,11 @@ public class Simulator {
                     if(scheduling_policy==0){
                         serverIndex=RRscheduling(serverIndex,Server_Number);
                     }
-                    if(scheduling_policy==1){
+                    else if(scheduling_policy==1){
                         serverIndex=loadBalancer_index(loadBalancer);
                     }
-                    if(Servers[serverIndex].getStatus() && generated_events<Max_numeber_Jobs){
-                        Servers[serverIndex].AddToQueue(category);
+                    if(Servers[serverIndex].getStatus() && generated_events<=Max_numeber_Jobs){
+                        Servers[serverIndex].AddToQueue(currenttime,category);
                         Servers[serverIndex].load();
                         if(scheduling_policy==1){
                          loadBalancer=loadBalancerUpdater(loadBalancer, lambda_collection[category][1], 0,-1,Servers);
@@ -350,58 +360,78 @@ public class Simulator {
                         timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
                         generated_events++;
                         timeline.add(timeStampGenerator(category, 1, list_of_Rnd[category][1], lambda_collection[category][1], currenttime,serverIndex));
+                        if(repetitions==1 && Max_numeber_Jobs<=10 && scheduling_policy==0){
+                            System.out.println(time+",0.0,"+category);
+                        }
                     }
-                    else{
-                        Servers[serverIndex].AddToQueue(category);
+                    else if(generated_events<=Max_numeber_Jobs){
+                        Servers[serverIndex].AddToQueue(currenttime,category);
                         if(generated_events<Max_numeber_Jobs){
                          timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
                          generated_events++;
                         }
+                        if(repetitions==1 && Max_numeber_Jobs<=10 && scheduling_policy==0){
+                            System.out.println(time+","+"0,0"+","+category);
+                        }
                     }
+                    
                     break;
 
                 case 1:
                     /*unload del server */
-                    int serverOutput=Servers[server_pointer].unload();
+                    Pair serverOutput=Servers[server_pointer].unload();
                     if(scheduling_policy==1){
-                        loadBalancer=loadBalancerUpdater(loadBalancer, lambda_collection[serverOutput][1], 1,server_pointer,Servers);
+                        loadBalancer=loadBalancerUpdater(loadBalancer, lambda_collection[(int)serverOutput.getValue()][1], 1,server_pointer,Servers);
                     }
-                    JobCategoryCounter[serverOutput]=JobCategoryCounter[serverOutput]+1;
+                    JobCategoryCounter[(int)serverOutput.getValue()]=JobCategoryCounter[(int)serverOutput.getValue()]+1;
                     if(!Servers[server_pointer].queueStatus()){
-                        category=Servers[server_pointer].load();
-                        /*timeline.add(timeStampGenerator(serverOutput, 0, list_of_Rnd[serverOutput][0], lambda_collection[serverOutput][0], currenttime, -1)); */
+                        in = Servers[server_pointer].load();
+                        category = (int)in.getValue();
                         timeline.add(timeStampGenerator(category, 1, list_of_Rnd[category][1], lambda_collection[category][1], currenttime,server_pointer));
+                        server_last_queue_time[server_pointer][1]=currenttime-in.getKey();
+                    }else{
+                        server_last_queue_time[server_pointer][1]=0;
                     }
                     /*calcolo del tempo di esecuzione nel server */
+                    if(repetitions==1 && Max_numeber_Jobs<=10 && scheduling_policy==0){
+                        System.out.println(time+","+server_last_queue_time[server_pointer][0]+","+category);
+                    }
+                    server_last_queue_time[server_pointer][0]=server_last_queue_time[server_pointer][1];
                     break;
             }
 
 
 
             /*struttura di debug */
-            System.out.println("time:"+currenttime+","+""+",ct:"+category+",op:"+operation+",serverI:"+serverIndex+",serverP:"+server_pointer);
-            System.out.print("|");
-            for(int i=0;i<JobCategoryCounter.length;i++){   /*creazione dei primi jobs (uno per parametro) */
+            
+            
+            if(debug){
+                System.out.println(currenttime+","+",ct:"+category+",op:"+operation+",serverI:"+serverIndex+",serverP:"+server_pointer+",genOp:"+generated_events);
+                System.out.print("|");
+                for(int i=0;i<JobCategoryCounter.length;i++){   /*creazione dei primi jobs (uno per parametro) */
                 System.out.print(JobCategoryCounter[i]+"|");
             }
             System.out.println();
             System.out.println();
-            if(true){
                 timeline_print(timeline);
                 System.out.println();
             }
-
-
+        }
+        if(debug){
+            System.out.println("ETA:"+currenttime);
+            System.out.print("|");
+            for(int i=0;i<JobCategoryCounter.length;i++){   /*creazione dei primi jobs (uno per parametro) */
+            System.out.print(JobCategoryCounter[i]+"|");
+            }
+        }
+        else{
+            System.out.println(currenttime);
+            for(int i=0;i<JobCategoryCounter.length;i++){
+                System.out.println(JobCategoryCounter[i]);
+            }
 
         }
-        System.out.println("ETA:"+currenttime);
-        System.out.print("|");
-        for(int i=0;i<JobCategoryCounter.length;i++){   /*creazione dei primi jobs (uno per parametro) */
-           System.out.print(JobCategoryCounter[i]+"|");
-        }
-        
-        Arrays.fill(JobCategoryCounter, 1);
-
+        Arrays.fill(JobCategoryCounter, 0);
         loadBalancer.clear();
         for(int i=0;i<Server_Number;i++){    /*istanziazione dei server e del loadBalancer*/
             Server newServer = new Server();
@@ -411,14 +441,11 @@ public class Simulator {
             Servers[i]=newServer;
         }
         timeline.clear();
-        System.out.println();
-        System.out.println("----------------------");
+        if(debug){
+            System.out.println();
+            System.out.println("----------------------");
+        }
         
-        
-
-
-
-
     }
 
         }   
