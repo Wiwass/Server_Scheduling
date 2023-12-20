@@ -371,7 +371,7 @@ public class Simulator {
                          generated_events++;
                         }
                         if(repetitions==1 && Max_numeber_Jobs<=10 && scheduling_policy==0){
-                            System.out.println(time+","+"0,0"+","+category);
+                            System.out.println(time+","+delta_time+","+category);    /*da sistemare dopo essermi chiarito con il professore */
                         }
                     }
                     
