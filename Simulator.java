@@ -233,30 +233,12 @@ public class Simulator {
         return output;
 
     }
-    static void timeline_print(PriorityQueue<Pair> x){
-        Pair print;
-        int [] temp;
-        Stack<Pair> stack = new Stack<Pair>();
-        while(!x.isEmpty()){
-            print=x.poll();
-            stack.add(print);
-
-            System.out.println(print.getKey());
-            temp=(int[])print.getValue();
-            System.out.println(" o:"+temp[0]+"/"+"c:"+temp[1]+"/"+"s:"+temp[2]);
-            System.out.println();
-        }
-        while(!stack.isEmpty()){
-            x.add(stack.pop());
-        }
-        System.out.println("---------------");
-    }
     public static void main(String[] args) {
 
 
 
     /*matrici e code necessarie per l'esecuzione del programma */
-        String path="IO-EXAMPLES/input_K6_H2_N6_R1_P0.in";
+        String path="IO-EXAMPLES/input_K100_H3_N100000_R5_P0.in";
         double[] parameters=parameters_extraction(path);
         double[][] lambda_collection=lambda_matrix_extraction(path, parameters[1]);
         PriorityQueue<Pair> loadBalancer= new PriorityQueue<>();
@@ -274,25 +256,17 @@ public class Simulator {
         float ETQA=0;
         float[][] stat_output = new float[Numer_Category][3];
 
-        boolean debug=false;
 
         
     /*filling adeguato degli array prima di iniziare l'esecuzione della simulazione */
         Arrays.fill(JobCategoryCounter, 0);
-        if(debug){
-            System.out.print("|");
-            for(int i=0;i<parameters.length;i++){   /*creazione dei primi jobs (uno per parametro) */
-            System.out.print((int)parameters[i]+"|");
-            }
-            System.out.println();
+        
+
+        for(int i=0;i<parameters.length;i++){   /*creazione dei primi jobs (uno per parametro) */
+            if(i!=0){System.out.print(",");}
+            System.out.print((int)parameters[i]);
         }
-        if(!debug){
-            for(int i=0;i<parameters.length;i++){   /*creazione dei primi jobs (uno per parametro) */
-                if(i!=0){System.out.print(",");}
-                System.out.print((int)parameters[i]);
-            }
-            System.out.println();
-        }
+        System.out.println();
         for(int i=0;i<Server_Number;i++){    /*istanziazione dei server e del loadBalancer*/
             Server newServer = new Server();
             temp = new Pair(0, i);
@@ -306,10 +280,6 @@ public class Simulator {
         }
 
     int counter=1;
-    
-    if(debug){
-        System.out.println("----------------------");
-    }    
 
     while(counter<=repetitions){
 
@@ -332,9 +302,6 @@ public class Simulator {
         for(int i=0;i<Numer_Category;i++){
             timeline.add(timeStampGenerator(i, 0, list_of_Rnd[i][0], lambda_collection[i][0], currenttime,-1));
             generated_events++;
-        }
-        if(debug){
-            timeline_print(timeline);
         }
 
         while(!timeline.isEmpty()){
@@ -409,48 +376,26 @@ public class Simulator {
                     break;
             }
 
-
-
             /*struttura di debug */
-            
-            
-            if(debug){
-                System.out.println(currenttime+","+",ct:"+category+",op:"+operation+",serverI:"+serverIndex+",serverP:"+server_pointer+",genOp:"+generated_events);
-                System.out.print("|");
-                for(int i=0;i<JobCategoryCounter.length;i++){   /*creazione dei primi jobs (uno per parametro) */
-                System.out.print(JobCategoryCounter[i]+"|");
-            }
-            System.out.println();
-            System.out.println();
-                timeline_print(timeline);
-                System.out.println();
-            }
-        }
-        if(debug){
-            System.out.println("ETA:"+currenttime);
-            System.out.print("|");
-            for(int i=0;i<Numer_Category;i++){   /*creazione dei primi jobs (uno per parametro) */
-            System.out.print(JobCategoryCounter[i]+"|");
-            }
-        }
-        else{
-            ETQA=ETQA+currenttime;
-            float Local_AQT=0;
-            for(int i=0;i<Numer_Category;i++){
-                Local_AQT=Local_AQT+stat_matrix[i][0];
-            }
-            Local_AQT=Local_AQT/Max_numeber_Jobs;
-            AQT=AQT+Local_AQT;
-            for(int i=0;i<Numer_Category;i++){
-                stat_output[i][0]=stat_output[i][0]+JobCategoryCounter[i];
-                stat_output[i][1]=stat_output[i][1]+stat_matrix[i][0]/JobCategoryCounter[i];
-                stat_output[i][2]=stat_output[i][2]+stat_matrix[i][1]/JobCategoryCounter[i];
-                list_of_Rnd[i][0].nextFloat();
-
-            }
-
 
         }
+        ETQA=ETQA+currenttime;
+        float Local_AQT=0;
+        for(int i=0;i<Numer_Category;i++){
+            Local_AQT=Local_AQT+stat_matrix[i][0];
+        }
+        Local_AQT=Local_AQT/Max_numeber_Jobs;
+        AQT=AQT+Local_AQT;
+        for(int i=0;i<Numer_Category;i++){
+            stat_output[i][0]=stat_output[i][0]+JobCategoryCounter[i];
+            stat_output[i][1]=stat_output[i][1]+stat_matrix[i][0]/JobCategoryCounter[i];
+            stat_output[i][2]=stat_output[i][2]+stat_matrix[i][1]/JobCategoryCounter[i];
+            list_of_Rnd[i][0].nextFloat();
+
+        }
+
+
+        
         Arrays.fill(JobCategoryCounter, 0);
         loadBalancer.clear();
         for(int i=0;i<Server_Number;i++){    /*istanziazione dei server e del loadBalancer*/
@@ -461,10 +406,6 @@ public class Simulator {
             Servers[i]=newServer;
         }
         timeline.clear();
-        if(debug){
-            System.out.println();
-            System.out.println("----------------------");
-        }
         
     }
         System.out.println(ETQA/repetitions);
@@ -475,40 +416,3 @@ public class Simulator {
 
         }   
     }
-
-
-
-
-/*cimitero 2.0
- * 
- * Stack<Pair> stack = new Stack<>();
-                Pair stack_element = loadBalancer.poll();
-                int current_server = (int)stack_element.getValue();
-                int counter=0;
-
-                while(current_server!=server){
-                    stack.add(stack_element);
-                    stack_element = loadBalancer.poll();
-                    current_server = (int)stack_element.getValue();
-                    
-                    counter++;
-                }
-                
-                newKey=stack_element.getKey()-(1/lamda_category);
-                stack_element.keySwap(newKey);
-
-                loadBalancer.add(stack_element);
-                
-                for(int i=0;i<counter;i++){
-                    loadBalancer.add(stack.pop());
-                }
-            
-            
-            
-        System.out.println(scheduling_policy);
-            if(scheduling_policy==0){
-            System.out.println("-----------------");
-            System.out.print("cambio della scheduling policy"+"\n"+scheduling_policy+"->");
-        }
-        scheduling_policy=1;
- */
