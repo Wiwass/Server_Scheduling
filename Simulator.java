@@ -238,7 +238,7 @@ public class Simulator {
 
 
     /*matrici e code necessarie per l'esecuzione del programma */
-        String path="IO-EXAMPLES/input_K100_H3_N100000_R5_P0.in";
+        String path="IO-EXAMPLES/input_K4_H3_N50_R10_P0.in";
         double[] parameters=parameters_extraction(path);
         double[][] lambda_collection=lambda_matrix_extraction(path, parameters[1]);
         PriorityQueue<Pair> loadBalancer= new PriorityQueue<>();
@@ -251,29 +251,18 @@ public class Simulator {
         Random[][] list_of_Rnd = new Random[Numer_Category][2];
         int[] JobCategoryCounter = new int[Numer_Category];
         Server[] Servers = new Server[Server_Number];
-        Pair temp;
+
+        
         float AQT=0;
         float ETQA=0;
         float[][] stat_output = new float[Numer_Category][3];
-
-
-        
-    /*filling adeguato degli array prima di iniziare l'esecuzione della simulazione */
-        Arrays.fill(JobCategoryCounter, 0);
-        
+        PriorityQueue<Pair> timeline = new PriorityQueue<>();
 
         for(int i=0;i<parameters.length;i++){   /*creazione dei primi jobs (uno per parametro) */
             if(i!=0){System.out.print(",");}
             System.out.print((int)parameters[i]);
         }
         System.out.println();
-        for(int i=0;i<Server_Number;i++){    /*istanziazione dei server e del loadBalancer*/
-            Server newServer = new Server();
-            temp = new Pair(0, i);
-            newServer.link_to_loadBalancer(temp);
-            loadBalancer.add(temp);
-            Servers[i]=newServer;
-        }
         for(int i=0;i<Numer_Category;i++){   /*creazione dei seed random per le rispettive categorie */
             list_of_Rnd[i][0] = new Random((long)lambda_collection[i][2]);
             list_of_Rnd[i][1] = new Random((long)lambda_collection[i][3]);
@@ -283,6 +272,8 @@ public class Simulator {
 
     while(counter<=repetitions){
 
+        counter++;
+
         /*parametri della simulazione */ 
         int serverIndex=-1;
         int server_pointer=-1;
@@ -291,18 +282,28 @@ public class Simulator {
         float currenttime=0;
         int generated_events=0;
         float delta_time=0;
+        Pair temp;
         float[][] server_last_queue_time= new float[Server_Number][2];
         Pair in = new Pair(0, 0);
         float[][] stat_matrix = new float[Numer_Category][2];
-
-        counter++;
- 
-        PriorityQueue<Pair> timeline = new PriorityQueue<>();
-
+        Arrays.fill(JobCategoryCounter, 0);
+        loadBalancer.clear();
+        timeline.clear();
+        for(int i=0;i<Server_Number;i++){    /*istanziazione dei server e del loadBalancer*/
+            Server newServer = new Server();
+            temp = new Pair(0, i);
+            newServer.link_to_loadBalancer(temp);
+            loadBalancer.add(temp);
+            Servers[i]=newServer;
+        }
         for(int i=0;i<Numer_Category;i++){
             timeline.add(timeStampGenerator(i, 0, list_of_Rnd[i][0], lambda_collection[i][0], currenttime,-1));
             generated_events++;
         }
+         
+        
+
+        
 
         while(!timeline.isEmpty()){
             Pair timestamp = timeline.poll();
@@ -376,8 +377,6 @@ public class Simulator {
                     break;
             }
 
-            /*struttura di debug */
-
         }
         ETQA=ETQA+currenttime;
         float Local_AQT=0;
@@ -393,19 +392,6 @@ public class Simulator {
             list_of_Rnd[i][0].nextFloat();
 
         }
-
-
-        
-        Arrays.fill(JobCategoryCounter, 0);
-        loadBalancer.clear();
-        for(int i=0;i<Server_Number;i++){    /*istanziazione dei server e del loadBalancer*/
-            Server newServer = new Server();
-            temp = new Pair(0, i);
-            newServer.link_to_loadBalancer(temp);
-            loadBalancer.add(temp);
-            Servers[i]=newServer;
-        }
-        timeline.clear();
         
     }
         System.out.println(ETQA/repetitions);
