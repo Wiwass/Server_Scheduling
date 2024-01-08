@@ -123,29 +123,25 @@ public class Simulator {
             case 0:
                 temp = (Pair)loadBalancer.peek();
                 newKey=temp.getKey()+(1/lamda_category);
+                loadBalancer.remove(temp);
                 temp.keySwap(newKey);
-                loadBalancer.poll();
-                Servers[(int)temp.getValue()].link_to_loadBalancer(temp);
                 loadBalancer.add(temp);
+                
                 break;
         
             case 1:
                 temp = (Servers[server]).load_status();
-                loadBalancer.remove(temp);
                 newKey = temp.getKey()-(1/lamda_category);
+                loadBalancer.remove(temp);
                 temp.keySwap(newKey);
-                Servers[(int)temp.getValue()].link_to_loadBalancer(temp);
                 loadBalancer.add(temp);
-            
-                
-                
+                    
                 break;
         }
         return loadBalancer;
     }
     static int loadBalancer_index(PriorityQueue<Pair> loadBalancer){
-        int output=(int)loadBalancer.peek().getValue();
-        return output;
+        return (int)loadBalancer.peek().getValue();
     }
     static float Rnd_generator(double lambda, Random random){
         
@@ -341,6 +337,9 @@ public class Simulator {
                     }
                     else{
                         Servers[serverIndex].AddToQueue(currenttime,category);
+                        if(scheduling_policy==1){
+                            loadBalancer=loadBalancerUpdater(loadBalancer, lambda_collection[category][1], 0, -1, Servers);
+                        }
                         if(generated_events<Max_numeber_Jobs){
                             timeline.add(timeStampGenerator(category, 0, list_of_Rnd[category][0], lambda_collection[category][0], currenttime,-1));
                             generated_events++;
