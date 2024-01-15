@@ -235,7 +235,7 @@ public class Simulator {
 
 
     /*matrici e code necessarie per l'esecuzione del programma */
-        String path="IO-EXAMPLES/input_K100_H3_N100000_R5_P0.in";
+        String path=args[0];
         double[] parameters=parameters_extraction(path);
         double[][] lambda_collection=lambda_matrix_extraction(path, parameters[1]);
         PriorityQueue<Pair> loadBalancer= new PriorityQueue<>();
