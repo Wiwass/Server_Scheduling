@@ -313,9 +313,9 @@ public class Simulator {
             if(arrived_events!=Max_numeber_Jobs || operation==1)
                 currenttime=time;
 
-            if(arrived_events==Max_numeber_Jobs && operation==0){
+            if(arrived_events==Max_numeber_Jobs && operation==0)
                 operation=2;
-            }
+            
             
             switch (operation) {
                 case 0:
